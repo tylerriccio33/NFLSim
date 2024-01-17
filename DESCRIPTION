@@ -15,3 +15,5 @@ LinkingTo:
 Imports: 
     magrittr,
     Rcpp
+URL: https://github.com/tylerriccio33/NFLSim
+BugReports: https://github.com/tylerriccio33/NFLSim/issues

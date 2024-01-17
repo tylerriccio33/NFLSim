@@ -4,52 +4,54 @@ data_assemble <- function(.seasons = 2021:2023) {
   # PBP Data #
   pbp_data <- data_get(seasons = .seasons) %>%
     fsubset(play_type != 'no_play') %>%
+    fastr_fix_colnames() %>%
+    fastr_fix_team_names() %>%
+    # FIXME: time variable issue
+    # add_time_variables() %>%
+    # fsubset(total_play_time > 0) %>%
+    fastr_derive_fg_metrics()
+  # assert("Some negative values in total time added" = !any(data$total_play_time < 0, na.rm = T))
 
-    add_time_variables()
 
-  #
+  # Schedule Data #
+  # FIXME: Implement
+  # game_team_data <- get_game_team_data(seasons = SEASONS) %>%
+  #   apply_name_conventions() %>%
+  #   fix_team_names(team) %>%
+  #   rename(id_posteam = team) %>%
+  #   filter(!(id_season == max(SEASONS) & id_week > CURRENT_WEEK)) %>%
+  #   group_by(id_game) %>%
+  #   arrange(id_game) %>%
+  #   mutate(id_defteam = case_when(
+  #     id_posteam == unique(id_posteam)[1] ~ unique(id_posteam)[2],
+  #     id_posteam == unique(id_posteam)[2] ~ unique(id_posteam)[1]
+  #   )) %>%
+  #   ungroup() %>%
+  #   calculate_weeks_from_first_group_row()
+
+
+  # Schedules #
+  # ? what's the difference between this and game_team_data
+  games <- nflreadr::load_schedules(SEASONS)
+
+
+  # ESPN Names #
+  # ? what exactly does this do
+  # ? does this cache
+  espn_team_name_tibble <- espnscrapeR::get_nfl_teams()
+
 
 
 }
 
 
+dt <- data_assemble()
 
-
-
+dt
 
 
 if (F) {
 
-data <- raw_data %>%
-  apply_name_conventions() %>%
-  fix_team_names() %>%
-  add_time_variables() %>%
-  # rare an unusual problem w/the api
-  fsubset(total_play_time > 0) %>%
-  # create binaries
-  mutate(field_goal_blocked = if_else(field_goal_result == "blocked", 1, 0),
-         field_goal_missed = if_else(field_goal_result == "missed", 1, 0),
-         field_goal_made = if_else(field_goal_result == "made", 1, 0),
-         across(c(field_goal_blocked, field_goal_missed, field_goal_made),
-                ~ if_else(is.na(.x), 0, .x)))
-assert("Some negative values in total time added" = !any(data$total_play_time < 0, na.rm = T))
-
-## Schedule and Matchup Data ##
-game_team_data <- get_game_team_data(seasons = SEASONS) %>%
-  apply_name_conventions() %>%
-  fix_team_names(team) %>%
-  rename(id_posteam = team) %>%
-  filter(!(id_season == max(SEASONS) & id_week > CURRENT_WEEK)) %>%
-  group_by(id_game) %>%
-  arrange(id_game) %>%
-  mutate(id_defteam = case_when(
-    id_posteam == unique(id_posteam)[1] ~ unique(id_posteam)[2],
-    id_posteam == unique(id_posteam)[2] ~ unique(id_posteam)[1]
-  )) %>%
-  ungroup() %>%
-  calculate_weeks_from_first_group_row()
-games <- nflreadr::load_schedules(SEASONS)
-espn_team_name_tibble <- espnscrapeR::get_nfl_teams()
 all_players <- nflreadr::load_players() %>%
   filter(status != 'RET') %>%
   select(display_name, id_gsis = gsis_id, id_posteam = team_abbr, id_position = position) %>%

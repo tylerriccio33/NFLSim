@@ -24,7 +24,7 @@ qtr_seconds_to_game_seconds <- function(qtr_seconds, qtr) {
 
 add_time_variables <- function(data) {
   assert("Data should not be grouped when passed to time variable adder." =
-           !is_grouped_df(data))
+           !dplyr::is_grouped_df(data))
   assert_cols(data, half_seconds_remaining, qtr, time, end_clock_time)
 
   # Add Game Seconds #

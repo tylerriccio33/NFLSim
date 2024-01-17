@@ -13,6 +13,9 @@ RoxygenNote: 7.1.2
 LinkingTo: 
     Rcpp
 Imports: 
+    cli,
+    collapse,
+    dplyr,
     magrittr,
     Rcpp
 URL: https://github.com/tylerriccio33/NFLSim

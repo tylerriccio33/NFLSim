@@ -7,7 +7,7 @@ Game <-
       "Non-tibble passed into matchup" = is_tibble(matchup),
       "Matchup should be a single game matchup." = nrow(matchup) == 1
     )
-    
+
     # pull out some players
     home_dc <- matchup$home_dc[[1]]
     away_dc <- matchup$away_dc[[1]]
@@ -31,22 +31,22 @@ Game <-
     away_team_rush_samples <- matchup$away_team_rush_samples[[1]]
     away_team_def_rush_samples <- matchup$away_team_def_rush_samples[[1]]
     away_team_specials <- matchup$away_team_specials[[1]]
-    
-    
+
+
     # Initialize Game #
     next_play <- initialize_game(matchup = matchup$matchup_data[[1]])
-    
+
     next_play <- add_wp(next_play)
-    
+
     # Start Prediction Loop #
     game_plays <- new_tibble(x = list(), nrow = 0)
     n_play <- 1
-    
+
     if (!quiet) {
       cli::cli_h2("Starting Game")
       cli_progress_bar("Playing game", total = max_plays)
     }
-    
+
     cur_team <- home_team
     cur_qb <- home_qb_gsis
     cur_all_samples <- home_team_all_samples
@@ -55,7 +55,7 @@ Game <-
     cur_special_samples <- home_team_specials
     cur_def_pass_samples <- away_team_def_pass_samples
     cur_def_rush_samples <- away_team_def_rush_samples
-    
+
     # benchmark ~ 4.37ms
     while (n_play <= max_plays) {
       if (!quiet) {
@@ -91,7 +91,7 @@ Game <-
                                        list(home_team_def_rush_samples)
         )[[1]]
       }
-      
+
       # Make Fourth Down Decision #
       if (next_play$down == 4) {
         fourth_down_situational_samples <-
@@ -103,26 +103,30 @@ Game <-
       } else {
         play_decision <- "go"
       }
-      
+
       # Sample dropback #
       if (play_decision == "go") {
         dropback_decision_samples <- Situation(
           samples = cur_all_samples, next_play)
         dropback_decision <- simulate_dropback_decision(dropback_decision_samples)
       }
-      
+
       # Select Sample #
       if (play_decision == 'go') {
         if (dropback_decision) {
           pass_samples <- Situation(cur_pass_samples, next_play)
-          def_pass_samples <- Situation(cur_def_pass_samples, next_play)
-          selected_sample <- SelectSample(off_samples = pass_samples,
-                                          def_samples = def_pass_samples)
+          def_pass_samples <-
+            Situation(cur_def_pass_samples, next_play)
+          selected_sample <-
+            SelectSample(off_samples = pass_samples,
+                         def_samples = def_pass_samples)
         } else {
           rush_samples <- Situation(cur_rush_samples, next_play)
-          def_rush_samples <- Situation(cur_def_rush_samples, next_play)
-          selected_sample <- SelectSample(off_samples = rush_samples,
-                                          def_samples = def_rush_samples)
+          def_rush_samples <-
+            Situation(cur_def_rush_samples, next_play)
+          selected_sample <-
+            SelectSample(off_samples = rush_samples,
+                         def_samples = def_rush_samples)
         }
         if (next_play$down == 4) {
           selected_sample <- fix_turnover_on_downs(selected_sample)
@@ -133,30 +137,30 @@ Game <-
       }
       # fix issues that come with variable yardline
       selected_sample <- fix_touchdown(selected_sample)
-      
+
       # Merge current game context with sample
       play <-
         decode_sample(sample = selected_sample, next_play)
       validate_core_play_equality(play, next_play)
-      
+
       # Log Play #
       game_plays <- vec_rbind(game_plays, play)
-      
+
       # End game #
       if (play$game_seconds_remaining <= 0) break
-      
+
       # Describe Possession Changes #
       next_play <- Play(play)
       next_play <- calculate_next_play_values(next_play)
       n_play <- n_play + 1
-      
+
     }
-    
+
     if (!quiet) {
       cli_progress_done()
       cli_alert_success("End game.")
     }
-    
+
     clean_game <- game_plays
     get_vars(clean_game,
              vars = .c(id_rusher_player, id_receiver_player, id_passer)) <- NULL
@@ -170,7 +174,7 @@ Game <-
       # append receiver
       append_player_id(dc = home_dc, pos = "receiver") %>%
       append_player_id(dc = away_dc, pos = "receiver")
-    
+
     clean_game <- clean_game %>%
       # replace QB
       fmutate(id_passer = case_when(
@@ -202,16 +206,16 @@ Game <-
            qb_dropback == 1 & qb_scramble == 1) ~ away_qb_list$name,
         .default = rusher_name
       ))
-    
+
     clean_game$id_play_new <- seq_row(clean_game)
-    
-    
+
+
     return(clean_game)
-    
+
   }
 
 
-# 
+#
 # bench::mark(Game(dt, max_plays = 1, quiet = T),
 #             iterations = 10)
 
@@ -225,9 +229,9 @@ Game <-
 #   ungroup() %>%
 #   pull(matchup_profile) %>%
 #   .[[1]]
-# 
-# 
-# 
+#
+#
+#
 # dt %>%
 #   Game(max_plays = 150, quiet = F) %>%
 #   select(id_posteam, yardline_100, down, ydstogo, yards_gained, desc) %>%

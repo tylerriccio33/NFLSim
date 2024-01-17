@@ -1,8 +1,25 @@
 
-## PBP Data ##
-raw_data <- get_data(seasons = SAFE_SEASONS) %>%
-  as_tibble() %>%
-  fsubset(play_type != 'no_play')
+data_assemble <- function(.seasons = 2021:2023) {
+
+  # PBP Data #
+  pbp_data <- data_get(seasons = .seasons) %>%
+    fsubset(play_type != 'no_play') %>%
+
+    add_time_variables()
+
+  #
+
+
+}
+
+
+
+
+
+
+
+if (F) {
+
 data <- raw_data %>%
   apply_name_conventions() %>%
   fix_team_names() %>%
@@ -195,7 +212,7 @@ matchups <- games %>%
 
 # matchups$matchup_data[[1]] %>%
 #   colnames()
-
+}
 
 
 

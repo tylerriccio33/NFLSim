@@ -1,7 +1,7 @@
 
 
 fix_touchdown <- function(selected_sample) {
-  
+
   touchdown <-
     ifelse(selected_sample$yards_gained >= selected_sample$yardline_100,
            1,
@@ -20,14 +20,14 @@ fix_touchdown <- function(selected_sample) {
     selected_sample$touchdown <- 0
     return(selected_sample)
   }
-  
+
 }
 
 
 fix_turnover_on_downs <- function(selected_sample) {
   validate_play(selected_sample)
   made_first <- selected_sample$yards_gained >= selected_sample$ydstogo
-  
+
   if (made_first) {
     selected_sample$fourth_down_converted <- 1
   } else {

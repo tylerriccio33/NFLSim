@@ -115,57 +115,6 @@ get_last_dc <-
 
   }
 
-reorder_dc_ranks <- function(dc, participation_data) {
-  # join game participation data to re-order ranks
-  # WARNING: this includes posterior participation data
-  assert_cols(participation_data, snap_pct)
-
-  dc <- mutate(dc, rank = as.integer(rank))
-
-  # slice top QB
-  qb_slices <- vctrs::vec_slice(dc, dc$position == 'QB')
-  qb_slices <- qb_slices %>%
-    group_by(id_game,id_posteam) %>%
-    arrange(id_posteam, rank, .by_group = T) %>%
-    slice(1)
-
-  # reorder WR by snap
-  wr_reordered <- vctrs::vec_slice(dc, dc$position == 'WR')
-
-  wr_reordered <- wr_reordered %>%
-    left_join(participation_data) %>%
-    group_by(id_game, id_posteam, position) %>%
-    arrange(-snap_pct, .by_group = T) %>%
-    mutate(rank = row_number()) %>%
-    ungroup() %>%
-    select(-c(snaps, snap_pct))
-  expect_resolved_suffix(wr_reordered)
-  wr_reordered <- vctrs::vec_slice(wr_reordered, wr_reordered$rank <= 3)
-
-  # slice top TE
-  te_slices <- vctrs::vec_slice(dc, dc$position == 'TE')
-  te_slices <- vctrs::vec_slice(te_slices, te_slices$rank <= 2)
-
-  # slice top RB
-  rb_slices <- vctrs::vec_slice(dc, dc$position == 'RB')
-  rb_slices <- vctrs::vec_slice(rb_slices, rb_slices$rank <= 2)
-
-  # Bind all
-  ordered_dc <- bind_rows(qb_slices, wr_reordered, te_slices, rb_slices) %>%
-    arrange(id_season, id_week, id_posteam, position, rank) %>%
-
-    # final rank clean up
-    group_by(id_game, id_posteam, position, rank) %>%
-    slice(1) %>%
-    ungroup()
-
-  # assert
-  expect_id_completion(ordered_dc)
-  assert_completion(ordered_dc, rank)
-  return(ordered_dc)
-
-}
-
 
 get_dc_from_future_games <- function(id_home_team, future_games) {
   assert_cols(future_games, id_posteam)
@@ -266,8 +215,6 @@ append_player_id <- function(game_plays, dc, pos) {
   return(joined)
 
 }
-
-
 
 collect_qb <- function(dc) {
   qb_dc <- vctrs::vec_slice(dc, dc$position == 'QB')

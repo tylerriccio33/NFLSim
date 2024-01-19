@@ -16,8 +16,11 @@ Imports:
     collapse,
     dplyr,
     magrittr,
+    purrr,
     Rcpp,
-    rlang
+    rlang,
+    tidyr,
+    vctrs
 URL: https://github.com/tylerriccio33/NFLSim
 BugReports: https://github.com/tylerriccio33/NFLSim/issues
 Suggests: 

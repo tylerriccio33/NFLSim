@@ -6,39 +6,38 @@
 #' @return Fixed data.
 #'
 fastr_fix_colnames <- function(data, ...) {
+  # Define Helpers:
+  # - replace _id with __temp to ensure no column name collisions
+  # - add_id will also remove the temp
   rm_id <-
-    function(x)
-      stringr::str_remove_all(string = x, pattern = "_id$")
-  add_id <- function(x)
+    function(x) {
+      stringr::str_replace_all(string = x, pattern = "_id$", replacement = "__temp")
+    }
+  add_id <- function(x) {
+    x <- stringr::str_remove_all(x, "__temp$")
     vctrs:::vec_paste0("id_", x)
-
-  dots <- rlang::enexprs(...)
-  if (length(dots) != 0) {
-    cols <- dots
-  } else {
-    ends_with_id_cols <-
-      purrr::keep(colnames(data),
-                  \(x) stringr::str_detect(string = x,
-                                            pattern = "^id_"))
-    cols <- expr(any_of(
-      c(
-        "week",
-        "season",
-        "posteam",
-        "defteam",
-        "home_team",
-        "away_team"
-      )
-    ))
-
-
-    # cols <- purrr::discard(cols, rlang::is_empty)
 
   }
 
+  data_colnames <- colnames(data)
+
+  # Log Cols Needing Change:
+  ends_with_id_cols <- data_colnames[grep("_id$", data_colnames)]
+  ends_with_id_cols_without_id <- rm_id(ends_with_id_cols)
+  hard_coded_cols <- c("week",
+                       "season",
+                       "posteam",
+                       "defteam",
+                       "home_team",
+                       "away_team")
+  add_id_to_cols <- vec_c(ends_with_id_cols_without_id, hard_coded_cols)
+
+  # Make Changes:
   data <- data %>%
-    dplyr::rename_with(.fn = rm_id, .cols = dplyr::matches('id_$')) %>%
-    dplyr::rename_with(.fn = add_id, .cols = !!cols)
+    # remove id from cols ending in id
+    dplyr::rename_with(.fn = rm_id, .cols = all_of(ends_with_id_cols)) %>%
+    # add id to hard coded ones and the ones where the id was removed
+    dplyr::rename_with(.fn = add_id, .cols = any_of(add_id_to_cols))
 
   return(data)
 
@@ -50,7 +49,6 @@ fastr_fix_team_names <- function(data, ...) {
   name_map <- c('OAK' = 'LV',
                 'SD' = 'LAC',
                 'STL' = 'LA')
-
   dots <- rlang::enexprs(...)
   if (length(dots) != 0) {
     cols <- dots

@@ -31,15 +31,15 @@ assert_at_least_complete <- function(data, ...) {
 }
 
 expect_id_completion <- function(data, ...) {
-  non_complete <- ungroup(data) %>%
-    select(starts_with('id_') & where( ~ any(is.na(.x)))) %>%
-    select(-c(...)) %>%
-    filter(if_any(everything(), ~ is.na(.x))) %>%
+  non_complete <- dplyr::ungroup(data) %>%
+    dplyr::select(dplyr::starts_with('id_') & where( ~ any(is.na(.x)))) %>%
+    dplyr::select(-c(...)) %>%
+    dplyr::filter(dplyr::if_any(everything(), ~ is.na(.x))) %>%
     colnames()
 
   if (length(non_complete) != 0) {
     data_string <- deparse(substitute(data))
-    rlang::abort(glue("Mising ID values in -> {non_complete} in -> {data_string}"))
+    cli_abort("Mising ID values in -> {non_complete} in -> {data_string}")
   }
 }
 
@@ -59,17 +59,17 @@ assert_completion <- function(data, ...) {
 assert_same_sum <- function(...) {
   data_strings <-  enquos(...) %>% map_chr(quo_name)
 
-  tibbles <- list2(...) %>% set_names(data_strings)
+  tibbles <- list2(...) %>% rlang::set_names(data_strings)
 
-  row_numbers <- map_dbl(tibbles, \(x) nrow(x))
+  row_numbers <- purrr::map_dbl(tibbles, \(x) nrow(x))
   row_numbers_vec <- unname(row_numbers)
 
   all_equal <- length(unique(row_numbers_vec)) == 1
   if (!all_equal) {
     print(row_numbers)
     msg <-
-      glue("Some tibbles passed to assert_same_sum were different")
-    abort(msg)
+      glue::glue("Some tibbles passed to assert_same_sum were different")
+    rlang::abort(msg)
   }
 
 }

@@ -32,81 +32,90 @@ data_assemble <- function(.seasons = 2021:2023) {
 
   # Schedules #
   # ? what's the difference between this and game_team_data
-  games <- nflreadr::load_schedules(SEASONS)
+  games <- nflreadr::load_schedules(.seasons)
 
 
   # ESPN Names #
   # ? what exactly does this do
   # ? does this cache
-  espn_team_name_tibble <- espnscrapeR::get_nfl_teams()
+  # espn_team_name_tibble <- espnscrapeR::get_nfl_teams()
 
+
+  # All Players #
+  # Notes on posteam consistency:
+  # - if a player comes to a new team, the NFL data won't track this
+  # - ESPN however will track the new team with updated depth charts
+  all_players <- nflreadr::load_players() %>%
+    dplyr::filter(status != 'RET') %>%
+    dplyr::select(
+      display_name,
+      id_gsis = gsis_id,
+      id_posteam = team_abbr,
+      id_position = position
+    ) %>%
+    dplyr::mutate(display_name = nflreadr::clean_player_names(display_name))
+
+  # Pluck Future Games:
+  # TODO: abstract to data-helpers, since it should be prefixed with pluck
+  future_games <- game_team_data %>%
+    filter(is.na(score),
+           id_week == CURRENT_WEEK,
+           id_season == max(SEASONS)) %>%
+    mutate(x_dc = map2(
+      id_posteam,
+      id_season,
+      ~ collect_espn_dc(season = .y, posteam = .x, espn_team_name_tibble)
+      ,.progress = T)) %>%
+    mutate(x_dc = pmap(
+      list(id_posteam, id_season, x_dc),
+      ~ join_espn_team_dc(
+        posteam = ..1,
+        season = ..2,
+        cur_espn_dc = ..3,
+        all_players = all_players
+      ),.progress = T
+    ))
+
+  # Participation Data:
+  raw_participation_data <-
+    collect_snap_pct(SAFE_SEASONS, summarize = F)
+  expect_id_completion(raw_participation_data)
+  summarized_participation_data <- collect_snap_pct(SAFE_SEASONS, summarize = T)
+  expect_id_completion(summarized_participation_data)
+
+
+  # Depth Chart:
+  raw_depth_charts <- data_get_dc(.seasons)
+  ordered_depth_charts <-
+    reorder_depth_chart(depth_chart = raw_depth_charts,
+                        participation_data = summarized_participation_data) %>%
+    bind_future_dc(future_games = future_games)
 
 
 }
 
 
-dt <- data_assemble()
 
-dt
+# dt <- data_assemble()
+#
+#
+#
+# dt
+#
+
+
 
 
 if (F) {
 
-all_players <- nflreadr::load_players() %>%
-  filter(status != 'RET') %>%
-  select(display_name, id_gsis = gsis_id, id_posteam = team_abbr, id_position = position) %>%
-  mutate(display_name = nflreadr::clean_player_names(display_name))
+
 # get expected roster for future games
-# NOTES on posteam consistency:
-# if a player comes to a new team, the nfl data won't track this
-# ESPN however will track the new team with updated depth charts
-future_games <- game_team_data %>%
-  filter(is.na(score),
-         id_week == CURRENT_WEEK,
-         id_season == max(SEASONS)) %>%
-  mutate(x_dc = map2(
-    id_posteam,
-    id_season,
-    ~ collect_espn_dc(season = .y, posteam = .x, espn_team_name_tibble)
-    ,.progress = T)) %>%
-  mutate(x_dc = pmap(
-    list(id_posteam, id_season, x_dc),
-    ~ join_espn_team_dc(
-      posteam = ..1,
-      season = ..2,
-      cur_espn_dc = ..3,
-      all_players = all_players
-    ),.progress = T
-  ))
+
+
 assert("No future games" = nrow(future_games) != 0)
 CUR_GAMEDAY <- slice_min(future_games, gameday, n = 1, with_ties = F)$gameday
 
-## DC Data ##
-raw_depth_charts <- collect_depth_charts(SAFE_SEASONS)
-raw_participation_data <-
-  collect_snap_pct(SAFE_SEASONS, summarize = F)
-expect_id_completion(raw_participation_data)
-summarized_participation_data <- collect_snap_pct(SAFE_SEASONS, summarize = T)
-expect_id_completion(summarized_participation_data)
 
-ordered_dc <-
-  reorder_dc_ranks(raw_depth_charts, participation_data = summarized_participation_data) %>%
-  # bind future game dc to past ordered
-  bind_rows(
-    future_games %>%
-      select(id_season, id_week, id_posteam_game = id_posteam, id_game, x_dc) %>%
-      unnest(x_dc) %>%
-      relocate(starts_with('id_')) %>%
-      select(-c(athlete_id, id_posteam)) %>%
-      rename(id_posteam = id_posteam_game) %>%
-      rename(
-        position = pos_abb,
-        rank = pos_rank,
-        full_name = player_full_name
-      )
-  )
-assert_team_representation(ordered_dc)
-assert_completion(ordered_dc, rank)
 elo_data <- nflModeler::get_elo(.season = SEASONS) %>%
   select(id_game, id_posteam, qb_value, qb_adj, qb) %>%
   left_join(

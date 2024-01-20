@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-fastr.R
 \name{fastr_fix_colnames}
 \alias{fastr_fix_colnames}
-\title{Fix nflfastR Data}
+\title{Reusable Functions Fixing Fastr Data}
 \usage{
 fastr_fix_colnames(data, ...)
 }
@@ -13,5 +13,7 @@ fastr_fix_colnames(data, ...)
 Fixed data.
 }
 \description{
-Fix nflfastR Data
+\itemize{
+\item \code{fastr_derive_defteam} assigns a defteam to each row. For example, if each row is a game-team combo, we can assign the defteam as the "other" team in the game group.
+}
 }

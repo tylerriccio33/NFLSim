@@ -1,4 +1,7 @@
-#' Fix nflfastR Data
+#' Reusable Functions Fixing Fastr Data
+#'
+#' @description
+#' * `fastr_derive_defteam` assigns a defteam to each row. For example, if each row is a game-team combo, we can assign the defteam as the "other" team in the game group.
 #'
 #' @param data
 #' @param ... For `fastr_fix_columns`, extra columns passed to the renaming function.
@@ -43,8 +46,6 @@ fastr_fix_colnames <- function(data, ...) {
 
 }
 
-
-
 fastr_fix_team_names <- function(data, ...) {
   name_map <- c('OAK' = 'LV',
                 'SD' = 'LAC',
@@ -66,4 +67,53 @@ fastr_fix_team_names <- function(data, ...) {
   data <-
     mutate(data, across(!!!cols, \(x) stringr::str_replace_all(string = x, name_map)))
   return(data)
+}
+
+fastr_pivot_home_away <- function(.data,
+                            home_cols = '^home_',
+                            away_cols = '^away_') {
+
+  # Collect Home Cols
+  home_data <- .data %>%
+    # Set team type
+    mutate(pattern_match = home_cols) %>%
+    # Select non-away cols
+    select(!dplyr::matches(away_cols)) %>%
+    # Scrub column names
+    rename_with(~ stringr::str_remove_all(.x, home_cols))
+
+  # Collect Away Cols
+  away_data <- .data %>%
+    # Set team type
+    mutate(pattern_match = away_cols) %>%
+    # Select away variables
+    select(!dplyr::matches(home_cols)) %>%
+    # Scrub column names
+    rename_with(~ stringr::str_remove_all(.x, away_cols))
+
+  # Bind Home and Away Data
+  combined_data <- vec_rbind(home_data, away_data) %>%
+    relocate(pattern_match)
+
+
+  return(combined_data)
+
+}
+
+fastr_derive_defteam <- function(data) {
+  assert_cols(data, id_game, id_posteam)
+
+  data %>%
+    dplyr::group_by(id_game) %>%
+    dplyr::arrange(id_game, .by_group = T) %>%
+    mutate(id_defteam = case_when(
+      id_posteam == unique(id_posteam)[1] ~ unique(id_posteam)[2],
+      id_posteam == unique(id_posteam)[2] ~ unique(id_posteam)[1]
+    )) %>%
+    dplyr::ungroup()
+}
+
+fastr_rm_future_week <- function(data, cur_season, cur_week) {
+  data %>%
+    filter(!(.data$id_season == cur_season & .data$id_week > cur_week))
 }

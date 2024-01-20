@@ -38,3 +38,18 @@ test_that("fastr_fix_colnames works", {
   expect_equal(result, x_result)
 
 })
+
+test_that("fastr_derive_defteam works", {
+  test_data <- tibble::tibble(
+    id_game = c(1, 1, 2, 2),
+    id_posteam = c('foo','bar','winston','duchess')
+  )
+  result <- fastr_derive_defteam(test_data)
+  x_result <- tibble::tibble(
+    id_game = c(1, 1, 2, 2),
+    id_posteam = c('foo','bar','winston','duchess'),
+    id_defteam = c('bar','foo','duchess','winston')
+  )
+  expect_equal(result, x_result)
+
+})

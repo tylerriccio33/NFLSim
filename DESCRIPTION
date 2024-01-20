@@ -19,6 +19,7 @@ Imports:
     purrr,
     Rcpp,
     rlang,
+    tibble,
     tidyr,
     vctrs
 URL: https://github.com/tylerriccio33/NFLSim

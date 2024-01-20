@@ -1,33 +1,21 @@
 
-data_assemble <- function(.seasons = 2021:2023) {
+# TODO: derive cur_week from something down here
+data_assemble <- function(.seasons = 2021:2023, cur_week) {
 
   # PBP Data #
-  pbp_data <- data_get(seasons = .seasons) %>%
-    fsubset(play_type != 'no_play') %>%
-    fastr_fix_colnames() %>%
-    fastr_fix_team_names() %>%
+  pbp_data <- get_data(seasons = .seasons) %>%
     # FIXME: time variable issue
     # add_time_variables() %>%
     # fsubset(total_play_time > 0) %>%
     fastr_derive_fg_metrics()
-  # assert("Some negative values in total time added" = !any(data$total_play_time < 0, na.rm = T))
 
 
   # Schedule Data #
-  # FIXME: Implement
-  # game_team_data <- get_game_team_data(seasons = SEASONS) %>%
-  #   apply_name_conventions() %>%
-  #   fix_team_names(team) %>%
-  #   rename(id_posteam = team) %>%
-  #   filter(!(id_season == max(SEASONS) & id_week > CURRENT_WEEK)) %>%
-  #   group_by(id_game) %>%
-  #   arrange(id_game) %>%
-  #   mutate(id_defteam = case_when(
-  #     id_posteam == unique(id_posteam)[1] ~ unique(id_posteam)[2],
-  #     id_posteam == unique(id_posteam)[2] ~ unique(id_posteam)[1]
-  #   )) %>%
-  #   ungroup() %>%
-  #   calculate_weeks_from_first_group_row()
+  # FIXME: why all the extra bloat?
+  game_team_data <- get_game_team_data(seasons = .seasons) %>%
+    # remove current week:
+    fastr_rm_future_week(cur_season = max(.seasons), cur_week = cur_week) %>%
+    calculate_weeks_from_first_group_row()
 
 
   # Schedules #
@@ -59,8 +47,8 @@ data_assemble <- function(.seasons = 2021:2023) {
   # TODO: abstract to data-helpers, since it should be prefixed with pluck
   future_games <- game_team_data %>%
     filter(is.na(score),
-           id_week == CURRENT_WEEK,
-           id_season == max(SEASONS)) %>%
+           id_week == cur_week,
+           id_season == max(.seasons)) %>%
     mutate(x_dc = map2(
       id_posteam,
       id_season,
@@ -101,7 +89,7 @@ data_assemble <- function(.seasons = 2021:2023) {
 #
 #
 # dt
-#
+
 
 
 

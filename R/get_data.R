@@ -1,4 +1,43 @@
-data_get <- function(seasons) {
+#' Functions For Getting Raw Data
+#'
+#' @param seasons int vector of season of which to select for.
+#'
+#' @return
+
+get_game_team_data <- function(seasons) {
+  nflreadr::load_schedules(seasons = seasons) %>%
+    as_tibble() %>%
+    # Pivot
+    fastr_pivot_home_away() %>%
+    mutate(
+      location = case_when(
+        location == "Neutral" ~ location,
+        pattern_match == "^home_" ~ "Home",
+        pattern_match == "^away_" ~ "Away"
+      ),
+      # Spread isn't fixed but moneyline is
+      spread_line = if_else(pattern_match == "^home_", spread_line * -1, spread_line),
+      id_home = pattern_match == "^home_"
+    ) %>%
+    select(-pattern_match) %>%
+    # Fix Name Conventions
+    fastr_fix_colnames() %>%
+    # Remove names where IDs exist
+    select(-c(qb_name,
+              coach,
+              stadium)) %>%
+    # Removing non-relevant columns
+    select(-c(overtime, gsis, id_old_game, id_nfl_detail, pfr, pff, espn)) %>%
+    # Relocate for ease
+    relocate(starts_with('id_')) %>%
+    # clean
+    fastr_fix_team_names() %>%
+    rename(id_posteam = team) %>%
+    fastr_derive_defteam()
+
+}
+
+get_data <- function(seasons) {
   # Load play-by-play data
   nflreadr::load_pbp(season = seasons) %>%
     # Convert to tibble
@@ -26,10 +65,13 @@ data_get <- function(seasons) {
         half_seconds_remaining <= 10 &
           (lateral_reception == 1 | lateral_rush == 1)
       )
-    )
+    ) %>%
+    fsubset(play_type != 'no_play') %>%
+    fastr_fix_colnames() %>%
+    fastr_fix_team_names()
 }
 
-data_get_dc <- function(SAFE_SEASONS, game_team_data) {
+get_dc <- function(SAFE_SEASONS, game_team_data) {
   # cleaning up the horrifically messy depth chart endpoint
 
   raw <- nflreadr::load_depth_charts(SAFE_SEASONS)
@@ -117,3 +159,4 @@ data_get_dc <- function(SAFE_SEASONS, game_team_data) {
   return(with_game_id)
 
 }
+

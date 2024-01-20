@@ -11,6 +11,8 @@ calculate_weeks_from_first_group_row <- function(game_team_data) {
 
 calculate_total_roster_relevance <- function(cur_dc, ordered_dc) {
 
+  # TODO: this can probably be dramatically sped up
+
   # Why not current play roster and current game? :
   # the current play rosters will reward light personnel
   # importance varies by play (lineman on 3rd&1 and receivers on 3rd&15)
@@ -27,26 +29,26 @@ calculate_total_roster_relevance <- function(cur_dc, ordered_dc) {
   # if the QB is not new, roster similarity will only help guide the sampler
 
   ordered_dc %>%
-    left_join(select(cur_dc,
-                     cur_pos = pos_abb,
-                     cur_rank = pos_rank,
-                     id_gsis),
-              by = 'id_gsis') %>%
-    drop_na(cur_pos) %>%
+    dplyr::left_join(dplyr::select(cur_dc,
+                                   cur_pos = pos_abb,
+                                   cur_rank = pos_rank,
+                                   id_gsis),
+                     by = 'id_gsis') %>%
+    tidyr::drop_na(cur_pos) %>%
     # rank positional importance
-    filter(cur_pos != 'QB') %>%
-    mutate(pos_importance = case_match(cur_pos,
-                                       "QB" ~ 5,
-                                       "WR" ~ 4,
-                                       "RB" ~ 3,
-                                       "TE" ~ 2,
-                                       .default = 1)) %>%
+    dplyr::filter(cur_pos != 'QB') %>%
+    dplyr::mutate(pos_importance = dplyr::case_match(cur_pos,
+                                              "QB" ~ 5,
+                                              "WR" ~ 4,
+                                              "RB" ~ 3,
+                                              "TE" ~ 2,
+                                              .default = 1)) %>%
     # multiply by existing rank
-    mutate(importance = cur_rank * pos_importance) %>%
+    dplyr::mutate(importance = cur_rank * pos_importance) %>%
     # sum each play total importance
     # the higher the number, the more common important players
-    group_by(id_game, id_posteam) %>%
-    summarize(roster_relevance = sum(importance), .groups = 'drop')
+    dplyr::group_by(id_game, id_posteam) %>%
+    dplyr::summarize(roster_relevance = sum(importance), .groups = 'drop')
 
 }
 
@@ -61,7 +63,7 @@ calculate_time_distance <- function(cur_gameday, game_team_data) {
 
   game_team_data$gameday <- lubridate::ymd(game_team_data$gameday)
 
-  cur_gameday <- ymd(cur_gameday)
+  cur_gameday <- lubridate::ymd(cur_gameday)
 
   distances <- cur_gameday - game_team_data$gameday
 
@@ -71,7 +73,7 @@ calculate_time_distance <- function(cur_gameday, game_team_data) {
   lookup$weighted_time_distance <- scales::rescale(-lookup$time_distance)
 
   if (any(vec_detect_missing(lookup$time_distance))) {
-    cli_alert_danger("Some values failed to pass the time distance converter.")
+    cli::cli_alert_danger("Some values failed to pass the time distance converter.")
   }
 
   lookup <- unique(lookup)
@@ -207,22 +209,3 @@ calculate_game_desirability <- function(matchup_data,
 
 }
 
-#
-#
-# filtered_matchups %>%
-#   slice(1) %>%
-#   mutate(t = pmap(list(matchup_data,
-#                        home_safety_qb_samples,
-#                        away_safety_qb_samples),
-#                   ~ calculate_game_desirability(..1, ..2, ..3))) %>%
-#   pull(t) %>%
-#   .[[1]]
-# .[[1]]
-#
-#
-# filtered_matchups %>%
-#   slice(1) %>%
-#   select(home_safety_qb_samples) %>%
-#   pull() %>%
-#   .[[1]] %>%
-#   view()

@@ -4,6 +4,13 @@
 #'
 #' @return
 
+get_game_data <- function(.seasons) {
+  nflreadr::load_schedules(.seasons) %>%
+    as_tibble() %>%
+    fastr_fix_colnames() %>%
+    fastr_fix_team_names()
+}
+
 get_game_team_data <- function(seasons) {
   nflreadr::load_schedules(seasons = seasons) %>%
     as_tibble() %>%
@@ -158,5 +165,16 @@ get_dc <- function(SAFE_SEASONS, game_team_data) {
 
   return(with_game_id)
 
+}
+
+get_players <- function(...) {
+  nflreadr::load_players(...) %>%
+    dplyr::filter(status != 'RET') %>%
+    dplyr::rename(
+      id_posteam = team_abbr,
+      id_position = position
+    ) %>%
+    dplyr::mutate(display_name = nflreadr::clean_player_names(display_name)) %>%
+    fastr_fix_colnames()
 }
 

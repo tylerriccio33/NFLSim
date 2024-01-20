@@ -1,216 +1,102 @@
 
 # TODO: derive cur_week from something down here
-data_assemble <- function(.seasons = 2021:2023, cur_week) {
+data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
+
+  cur_season <- max(.seasons)
 
   # PBP Data #
   pbp_data <- get_data(seasons = .seasons) %>%
-    # FIXME: time variable issue
-    # add_time_variables() %>%
-    # fsubset(total_play_time > 0) %>%
+    add_time_variables() %>%
+    fsubset(total_play_time > 0) %>%
     fastr_derive_fg_metrics()
 
 
-  # Schedule Data #
-  # FIXME: why all the extra bloat?
+  # Game and Team Data:
+  game_data <- get_game_data(.seasons)
   game_team_data <- get_game_team_data(seasons = .seasons) %>%
     # remove current week:
-    fastr_rm_future_week(cur_season = max(.seasons), cur_week = cur_week) %>%
+    fastr_rm_future_week(cur_season = cur_season, cur_week = cur_week) %>%
     calculate_weeks_from_first_group_row()
 
-
-  # Schedules #
-  # ? what's the difference between this and game_team_data
-  games <- nflreadr::load_schedules(.seasons)
-
-
-  # ESPN Names #
-  # ? what exactly does this do
-  # ? does this cache
-  # espn_team_name_tibble <- espnscrapeR::get_nfl_teams()
-
-
-  # All Players #
-  # Notes on posteam consistency:
-  # - if a player comes to a new team, the NFL data won't track this
-  # - ESPN however will track the new team with updated depth charts
-  all_players <- nflreadr::load_players() %>%
-    dplyr::filter(status != 'RET') %>%
-    dplyr::select(
-      display_name,
-      id_gsis = gsis_id,
-      id_posteam = team_abbr,
-      id_position = position
-    ) %>%
-    dplyr::mutate(display_name = nflreadr::clean_player_names(display_name))
-
   # Pluck Future Games:
-  # TODO: abstract to data-helpers, since it should be prefixed with pluck
-  future_games <- game_team_data %>%
-    filter(is.na(score),
-           id_week == cur_week,
-           id_season == max(.seasons)) %>%
-    mutate(x_dc = map2(
-      id_posteam,
-      id_season,
-      ~ collect_espn_dc(season = .y, posteam = .x, espn_team_name_tibble)
-      ,.progress = T)) %>%
-    mutate(x_dc = pmap(
-      list(id_posteam, id_season, x_dc),
-      ~ join_espn_team_dc(
-        posteam = ..1,
-        season = ..2,
-        cur_espn_dc = ..3,
-        all_players = all_players
-      ),.progress = T
-    ))
+  future_games <-
+    pluck_future_games(game_team_data, cur_week = cur_week,
+                       cur_season = cur_season) %>%
+    append_future_dc()
+  assert("No future games" = nrow(future_games) != 0)
+  cur_gameday <- dplyr::slice_min(future_games, gameday, n = 1, with_ties = F)$gameday
 
   # Participation Data:
+  # TODO: ? utility of raw participation data
   raw_participation_data <-
-    collect_snap_pct(SAFE_SEASONS, summarize = F)
-  expect_id_completion(raw_participation_data)
-  summarized_participation_data <- collect_snap_pct(SAFE_SEASONS, summarize = T)
-  expect_id_completion(summarized_participation_data)
-
+    collect_snap_pct(.seasons, summarize = F)
+  summarized_participation_data <- collect_snap_pct(.seasons, summarize = T)
 
   # Depth Chart:
-  raw_depth_charts <- data_get_dc(.seasons)
+  raw_depth_charts <- get_dc(SAFE_SEASONS = .seasons, game_team_data = game_team_data)
   ordered_depth_charts <-
     reorder_depth_chart(depth_chart = raw_depth_charts,
                         participation_data = summarized_participation_data) %>%
     bind_future_dc(future_games = future_games)
 
+  # Calculate Time Desirability:
+  distance_lookup <- calculate_time_distance(cur_gameday = cur_gameday,
+                                             game_team_data = game_team_data)
+
+  # Slice Samples:
+  # TODO: do we really need two here
+  sample_data <- slice_play_samples(raw_data = pbp_data) %>%
+    append_dc_ranks(ordered_depth_charts) %>%
+    left_join(distance_lookup,
+              relationship = 'many-to-one')
+  decoded_sample_data <- select(sample_data, -id_play)
+
+  # Create Matchup Data:
+  matchup_data <-
+    prep_matchup(game_data = game_data,
+                 cur_season = cur_season,
+                 cur_week = cur_week) %>%
+    append_future_dc(future_games = future_games) %>%
+    append_roster_relevance(ordered_depth_charts = ordered_depth_charts)
+
+
+  # Return:
+  cls <- list(
+    "sample_data" = sample_data,
+    "decoded_sample_data" = decoded_sample_data,
+    "matchup_data" = matchup_data
+  )
+
+  return(cls)
 
 }
 
 
-
-# dt <- data_assemble()
-#
-#
-#
-# dt
-
-
-
-
-
 if (F) {
 
-
-# get expected roster for future games
-
-
-assert("No future games" = nrow(future_games) != 0)
-CUR_GAMEDAY <- slice_min(future_games, gameday, n = 1, with_ties = F)$gameday
+  dt <- data_assemble()
 
 
-elo_data <- nflModeler::get_elo(.season = SEASONS) %>%
-  select(id_game, id_posteam, qb_value, qb_adj, qb) %>%
-  left_join(
-    nflreadr::load_players() %>%
-      filter(position == 'QB') %>%
-      select(qb = display_name, id_passer = gsis_id) %>%
-      unique()
-  ) %>%
-  select(-qb)
+  dt
 
-## Sample Data ##
-distance_lookup <- calculate_time_distance(cur_gameday = CUR_GAMEDAY,
-                                           game_team_data = game_team_data)
-sample_data <- data %>%
-  drop_na(down) %>%
-  filter(play_type %in% c('run', 'pass', 'punt', 'field_goal')) %>%
-  # filter weird situations (for now)
-  filter(!(interception == 1 & fumble == 1),
-         safety == 0) %>%
-  # append dc rank and position
-  append_dc_ranks(ordered_dc) %>%
-  left_join(distance_lookup,
-            relationship = 'many-to-one')
-expect_resolved_suffix(sample_data)
-assert_no_duplicates(sample_data, id_play, id_game)
-assert_completion(sample_data, total_play_time)
-clean_sample_data <-
-  na_omit(sample_data, cols = .c(down, ydstogo, yardline_100, wp)) %>%
-  select(-id_play)
-
-## Matchup Data ##
-matchups <- games %>%
-  as_tibble() %>%
-  apply_name_conventions() %>%
-  fix_team_names(id_home_team, id_away_team) %>%
-  filter(.data$id_season == max(SEASONS),
-         .data$id_week == CURRENT_WEEK) %>%
-  select(
-    -c(
-      away_score,
-      home_score,
-      result,
-      total,
-      overtime,
-      id_old_game,
-      gsis,
-      id_nfl_detail,
-      pfr,
-      pff,
-      espn,
-      away_qb_name,
-      home_qb_name,
-      stadium
-    )
-  ) %>%
-  # grab DC from future games
-  mutate(
-    id_home_team_dc = map(
-      id_home_team,
-      \(x) get_dc_from_future_games(x, future_games = future_games)
-      ,
-      .progress = T
-    ),
-    id_away_team_dc = map(
-      id_away_team,
-      \(x) get_dc_from_future_games(x, future_games = future_games)
-      ,
-      .progress = T
-    )
-  ) %>%
-  filter(!(lengths(id_home_team_dc) == 0 |
-             is.null(id_home_team_dc))) %>%
-  filter(!(lengths(id_away_team_dc) == 0 |
-             is.null(id_away_team_dc))) %>%
-  # correct any empty or old teams
-  reassign_teams(id_home_team, id_home_team_dc) %>%
-  reassign_teams(id_away_team, id_away_team_dc) %>%
-  # calculate roster relevances
-  mutate(
-    home_roster_relevances = map(
-      id_home_team_dc,
-      \(x) calculate_total_roster_relevance(cur_dc = x, ordered_dc)
-      ,
-      .progress = T
-    )
-  ) %>%
-  mutate(
-    away_roster_relevances = map(
-      id_away_team_dc,
-      \(x) calculate_total_roster_relevance(cur_dc = x, ordered_dc)
-      ,
-      .progress = T
-    )
-  ) %>%
-  # # calculate distance from game
   # mutate(time_distance = map(
   #   gameday,
   #   \(x) calculate_time_distance(cur_gameday = x, game_team_data)
   # )) %>%
-  # nest all of this into matchup data
-  group_by(matchup = row_number()) %>%
-  nest(.key = 'matchup_data') %>%
-  ungroup()
 
 
-# matchups$matchup_data[[1]] %>%
-#   colnames()
+# TODO: do you need this
+# elo_data <- nflModeler::get_elo(.season = SEASONS) %>%
+#   select(id_game, id_posteam, qb_value, qb_adj, qb) %>%
+#   left_join(
+#     nflreadr::load_players() %>%
+#       filter(position == 'QB') %>%
+#       select(qb = display_name, id_passer = gsis_id) %>%
+#       unique()
+#   ) %>%
+#   select(-qb)
+
+
 }
 
 

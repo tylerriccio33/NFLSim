@@ -10,6 +10,12 @@ reorder_depth_chart(depth_chart, participation_data)
 \item{depth_chart}{Raw depth chart data.}
 
 \item{participation_data}{Summarized participation data.}
+
+\item{game_team_data}{Data where each row is a game-team combination.}
+
+\item{cur_week}{The current week of target games.}
+
+\item{cur_season}{Int indicating the current season.}
 }
 \value{
 \itemize{
@@ -19,5 +25,6 @@ reorder_depth_chart(depth_chart, participation_data)
 \description{
 \itemize{
 \item \code{reorder_depth_chart} takes the raw depth charts and summarized participation data to reorder the charting ranks. The raw depth charts are from NFL data exchange, which can be wrong often. It's often a better representation of depth rank to go on participation. So here, we'll use the player's particitpation percentage to determine the rank. For example, the player with the most participation in the game will get the rank of 1, and so on.
+\item \code{pluck_future_games} takes game team data and filteres to unplayed records.
 }
 }

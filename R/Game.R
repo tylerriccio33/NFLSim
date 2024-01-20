@@ -8,6 +8,8 @@ Game <-
       "Matchup should be a single game matchup." = nrow(matchup) == 1
     )
 
+    # TODO: abstract this to function, function will read into parent (Game) env
+
     # pull out some players
     home_dc <- matchup$home_dc[[1]]
     away_dc <- matchup$away_dc[[1]]
@@ -24,7 +26,7 @@ Game <-
     home_team_rush_samples <- matchup$home_team_rush_samples[[1]]
     home_team_def_rush_samples <- matchup$home_team_def_rush_samples[[1]]
     home_team_specials <- matchup$home_team_specials[[1]]
-    # AWAY
+    # away
     away_team_all_samples <- matchup$away_team_all_samples[[1]]
     away_team_pass_samples <- matchup$away_team_pass_samples[[1]]
     away_team_def_pass_samples <- matchup$away_team_def_pass_samples[[1]]
@@ -47,6 +49,7 @@ Game <-
       cli_progress_bar("Playing game", total = max_plays)
     }
 
+    # TODO: abstract to function, make modifictions of parent frame
     cur_team <- home_team
     cur_qb <- home_qb_gsis
     cur_all_samples <- home_team_all_samples
@@ -62,6 +65,7 @@ Game <-
         cli_progress_update()
       }
       # Set Current Team #
+      # TODO: abstract to function, make mods to parent frame
       if (next_play$id_posteam != cur_team) {
         cur_team <- next_play$id_posteam
         cur_qb <- ifelse(cur_team == home_team, home_qb_gsis, away_qb_gsis)
@@ -161,6 +165,7 @@ Game <-
       cli_alert_success("End game.")
     }
 
+    # TODO: abstract to function
     clean_game <- game_plays
     get_vars(clean_game,
              vars = .c(id_rusher_player, id_receiver_player, id_passer)) <- NULL
@@ -175,6 +180,7 @@ Game <-
       append_player_id(dc = home_dc, pos = "receiver") %>%
       append_player_id(dc = away_dc, pos = "receiver")
 
+    # TODO: abstract to function
     clean_game <- clean_game %>%
       # replace QB
       fmutate(id_passer = case_when(

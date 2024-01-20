@@ -115,5 +115,5 @@ fastr_derive_defteam <- function(data) {
 
 fastr_rm_future_week <- function(data, cur_season, cur_week) {
   data %>%
-    filter(!(.data$id_season == cur_season & .data$id_week > cur_week))
+    dplyr::filter(!(.data$id_season == cur_season & .data$id_week > cur_week))
 }

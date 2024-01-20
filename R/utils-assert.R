@@ -39,7 +39,7 @@ expect_id_completion <- function(data, ...) {
 
   if (length(non_complete) != 0) {
     data_string <- deparse(substitute(data))
-    cli_abort("Mising ID values in -> {non_complete} in -> {data_string}")
+    cli::cli_abort("Mising ID values in -> {non_complete} in -> {data_string}")
   }
 }
 
@@ -105,15 +105,15 @@ assert_existance <- function(data, ...) {
 
 assert_no_duplicates <- function(data, ...) {
   duplicates <- data %>%
-    group_by(...) %>%
-    filter(n() > 1) %>%
-    ungroup()
+    dplyr::group_by(...) %>%
+    dplyr::filter(dplyr::n() > 1) %>%
+    dplyr::ungroup()
 
   if (nrow(duplicates) > 1) {
     data_string <- deparse(substitute(data))
 
-    cols <- enquos(...) %>% map_chr(quo_name) %>% as.character()
-    cols <- str_c(cols, collapse = ",")
+    cols <- enquos(...) %>% purrr::map_chr(quo_name) %>% as.character()
+    cols <- stringr::str_c(cols, collapse = ",")
 
     code_string <- glue("{data_string} %>%
     group_by({cols}) %>%
@@ -122,10 +122,8 @@ assert_no_duplicates <- function(data, ...) {
 
     writeClipboard(code_string)
 
-    msg <-
-      glue("Duplicates found in -> {data_string}. Code to find it copied to clip.")
+    cli_abort("Duplicates found in -> {data_string}. Code to find it copied to clip.")
 
-    rlang::abort(msg)
 
   }
 
@@ -138,25 +136,25 @@ assert_team_representation <- function(data, warn = F) {
   assert_cols(data, id_game, id_posteam)
 
   game_summary <- data %>%
-    select(id_game, id_posteam) %>%
+    dplyr::select(id_game, id_posteam) %>%
     unique() %>%
-    group_by(id_game) %>%
-    summarize(n = n(),
-              teams = n_distinct(id_posteam)) %>%
-    ungroup()
+    dplyr::group_by(id_game) %>%
+    dplyr::summarize(n = dplyr::n(),
+              teams = dplyr::n_distinct(id_posteam)) %>%
+    dplyr::ungroup()
 
   no_two_teams <- game_summary %>%
-    filter(n != 2 | teams != 2)
+    dplyr::filter(n != 2 | teams != 2)
 
   if (nrow(no_two_teams)) {
     data_string <- deparse(substitute(data))
-    game_example <- slice_sample(no_two_teams, n = 5) %>% .$id_game
-    game_example_string <- str_c(game_example, collapse = ',')
+    game_example <- dplyr::slice_sample(no_two_teams, n = 5) %>% .$id_game
+    game_example_string <- stringr::str_c(game_example, collapse = ',')
 
     if (!warn) {
-      cli_abort(glue("Two teams were not present in some games. Here are examples -> {game_example_string}"))
+      cli::cli_abort("Two teams were not present in some games. Here are examples -> {game_example_string}")
     } else {
-      cli_alert_danger(glue("Two teams were not present in some games. Here are examples -> {game_example_string}"))
+      cli::cli_alert_danger("Two teams were not present in some games. Here are examples -> {game_example_string}")
     }
   }
 

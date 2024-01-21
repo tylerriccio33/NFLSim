@@ -166,7 +166,7 @@ assert <- function(...,
                    message = NULL,
                    class = NULL,
                    not = TRUE,
-                   call = caller_env()) {
+                   call = rlang::caller_env()) {
   params <- list2(...)
 
   if (length(params) > 1) {
@@ -186,11 +186,11 @@ assert <- function(...,
 
   if (is.logical(condition) &&
       ((!condition && not) | (condition && !not))) {
-    if (is_named(params)) {
+    if (rlang::is_named(params)) {
       message <- message %||% names(params)
     }
 
-    abort(message = message,
+    rlang::abort(message = message,
           class = class,
           call = call)
   }

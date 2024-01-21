@@ -1,5 +1,6 @@
 
 # TODO: derive cur_week from something down here
+# - have to allow for back testing too
 data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
 
   cur_season <- max(.seasons)
@@ -22,7 +23,7 @@ data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
   future_games <-
     pluck_future_games(game_team_data, cur_week = cur_week,
                        cur_season = cur_season) %>%
-    append_future_dc()
+    append_dc_to_future_games()
   assert("No future games" = nrow(future_games) != 0)
   cur_gameday <- dplyr::slice_min(future_games, gameday, n = 1, with_ties = F)$gameday
 
@@ -43,14 +44,6 @@ data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
   distance_lookup <- calculate_time_distance(cur_gameday = cur_gameday,
                                              game_team_data = game_team_data)
 
-  # Slice Samples:
-  # TODO: do we really need two here
-  sample_data <- slice_play_samples(raw_data = pbp_data) %>%
-    append_dc_ranks(ordered_depth_charts) %>%
-    left_join(distance_lookup,
-              relationship = 'many-to-one')
-  decoded_sample_data <- select(sample_data, -id_play)
-
   # Create Matchup Data:
   matchup_data <-
     prep_matchup(game_data = game_data,
@@ -59,15 +52,18 @@ data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
     append_future_dc(future_games = future_games) %>%
     append_roster_relevance(ordered_depth_charts = ordered_depth_charts)
 
+  # Slice Sample Data:
+  sample_data <- slice_play_samples(raw_data = pbp_data) %>%
+    append_dc_ranks(ordered_depth_charts) %>%
+    left_join(distance_lookup,
+              relationship = 'many-to-one')
+
+  # Append Samples:
+  matchup_data <-
+    append_samples_to_matchup(matchup_data = matchup_data, samples = sample_data)
 
   # Return:
-  cls <- list(
-    "sample_data" = sample_data,
-    "decoded_sample_data" = decoded_sample_data,
-    "matchup_data" = matchup_data
-  )
-
-  return(cls)
+  return(matchup_ata)
 
 }
 
@@ -75,6 +71,8 @@ data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
 if (F) {
 
   dt <- data_assemble()
+
+
 
 
   dt

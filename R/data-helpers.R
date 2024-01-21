@@ -2,7 +2,8 @@
 #'
 #' @description
 #' * `reorder_depth_chart` takes the raw depth charts and summarized participation data to reorder the charting ranks. The raw depth charts are from NFL data exchange, which can be wrong often. It's often a better representation of depth rank to go on participation. So here, we'll use the player's particitpation percentage to determine the rank. For example, the player with the most participation in the game will get the rank of 1, and so on.
-#' * `pluck_future_games` takes game team data and filteres to unplayed records.
+#' * `pluck_future_games` takes game team data and filters to unplayed records.
+#' * `append_samples_to_matchup` appends the home/away samples to each matchup record.
 #'
 #' @param depth_chart Raw depth chart data.
 #' @param participation_data Summarized participation data.
@@ -63,7 +64,6 @@ reorder_depth_chart <- function(depth_chart, participation_data) {
 
 }
 
-# TODO: have to check a lot of this
 bind_future_dc <- function(depth_chart, future_games) {
   ordered_dc <-
     # bind future game dc to past ordered
@@ -95,7 +95,7 @@ pluck_future_games <-
     return(future_games)
   }
 
-append_future_dc <- function(future_games) {
+append_dc_to_future_games <- function(future_games) {
 
   # TODO: this data needs to be selected down
   all_players <- get_players()
@@ -138,4 +138,17 @@ slice_play_samples <- function(raw_data) {
   return(sample_data)
 }
 
+append_samples_to_matchup <- function(matchup_data, samples) {
 
+  browser()
+
+  # home_team_all_samples <- matchup$home_team_all_samples[[1]]
+  # home_team_pass_samples <- matchup$home_team_pass_samples[[1]]
+  # home_team_def_pass_samples <- matchup$home_team_def_pass_samples[[1]]
+  # home_team_rush_samples <- matchup$home_team_rush_samples[[1]]
+  # home_team_def_rush_samples <- matchup$home_team_def_rush_samples[[1]]
+  # home_team_specials <- matchup$home_team_specials[[1]]
+
+  browser()
+
+}

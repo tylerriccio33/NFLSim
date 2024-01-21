@@ -1,38 +1,12 @@
 
 Game <-
-  function(matchup,
+  function(matchup_dataclass,
            max_plays = 150,
            quiet = F) {
-    assert(
-      "Non-tibble passed into matchup" = is_tibble(matchup),
-      "Matchup should be a single game matchup." = nrow(matchup) == 1
-    )
+    assert("Matchup dataclass must be a single ")
 
-    # TODO: abstract this to function, function will read into parent (Game) env
-
-    # pull out some players
-    home_dc <- matchup$home_dc[[1]]
-    away_dc <- matchup$away_dc[[1]]
-    home_qb_list <- matchup$home_qb_list[[1]]
-    home_qb_gsis <- matchup$home_qb_gsis[[1]]
-    away_qb_list <- matchup$away_qb_list[[1]]
-    away_qb_gsis <- matchup$away_qb_gsis[[1]]
-    home_team <- matchup$home_team[[1]]
-    away_team <- matchup$away_team[[1]]
-    # pre allocation
-    home_team_all_samples <- matchup$home_team_all_samples[[1]]
-    home_team_pass_samples <- matchup$home_team_pass_samples[[1]]
-    home_team_def_pass_samples <- matchup$home_team_def_pass_samples[[1]]
-    home_team_rush_samples <- matchup$home_team_rush_samples[[1]]
-    home_team_def_rush_samples <- matchup$home_team_def_rush_samples[[1]]
-    home_team_specials <- matchup$home_team_specials[[1]]
-    # away
-    away_team_all_samples <- matchup$away_team_all_samples[[1]]
-    away_team_pass_samples <- matchup$away_team_pass_samples[[1]]
-    away_team_def_pass_samples <- matchup$away_team_def_pass_samples[[1]]
-    away_team_rush_samples <- matchup$away_team_rush_samples[[1]]
-    away_team_def_rush_samples <- matchup$away_team_def_rush_samples[[1]]
-    away_team_specials <- matchup$away_team_specials[[1]]
+    browser()
+    expose_matchup_variables(matchup)
 
 
     # Initialize Game #

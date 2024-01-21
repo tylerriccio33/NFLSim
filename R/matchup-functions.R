@@ -31,7 +31,6 @@ prep_matchup <- function(game_data, cur_season, cur_week) {
 }
 
 append_future_dc <- function(matchup_data, future_games) {
-
   matchup_data %>%
     mutate(
       id_home_team_dc = map(

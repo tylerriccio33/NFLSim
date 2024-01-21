@@ -118,23 +118,15 @@ get_last_dc <-
 
 get_dc_from_future_games <- function(id_home_team, future_games) {
   assert_cols(future_games, id_posteam)
-  team_dc <- tryCatch({
+  tryCatch({
     filtered <-
       vctrs::vec_slice(future_games, future_games$id_posteam == id_home_team)
-    if (nrow(filtered) == 0) {
-      cli_abort()
-    }
-    filtered$x_dc[[1]]
+    return(filtered$x_dc[[1]])
   }, error = function(e) {
-    NULL
+    cli_alert(c(x = "Failed to get dc for {id_home_team} -> {e}",
+                i = "Returning empty tibble."))
+    return(tibble::tibble())
   })
-  if (is.null(team_dc)) {
-    msg <- glue("Failed to get dc for {id_home_team}. Returning empty tibble.")
-    rlang::warn(msg)
-    return(tibble())
-  }
-
-  return(team_dc)
 
 }
 

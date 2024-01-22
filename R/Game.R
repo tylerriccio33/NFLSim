@@ -3,24 +3,19 @@ Game <-
   function(matchup_dataclass,
            max_plays = 150,
            quiet = F) {
-    assert("Matchup dataclass must be a single ")
+    assert("Matchup dataclass must be a single row." = nrow(matchup_dataclass) == 1)
 
     browser()
-    expose_matchup_variables(matchup)
-
-
-    # Initialize Game #
-    next_play <- initialize_game(matchup = matchup$matchup_data[[1]])
-
+    # Initialize Game:
+    expose_matchup_variables(matchup = matchup_dataclass)
+    next_play <- initialize_game(matchup = matchup_dataclass)
     next_play <- add_wp(next_play)
-
-    # Start Prediction Loop #
-    game_plays <- new_tibble(x = list(), nrow = 0)
+    game_plays <- tibble::new_tibble(x = list(), nrow = 0)
     n_play <- 1
 
     if (!quiet) {
       cli::cli_h2("Starting Game")
-      cli_progress_bar("Playing game", total = max_plays)
+      cli::cli_progress_bar("Playing game", total = max_plays)
     }
 
     # TODO: abstract to function, make modifictions of parent frame

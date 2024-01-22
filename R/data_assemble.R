@@ -50,7 +50,7 @@ data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
                  cur_season = cur_season,
                  cur_week = cur_week) %>%
     append_future_dc(future_games = future_games) %>%
-    append_roster_relevance(ordered_depth_charts = ordered_depth_charts)
+    append_roster_relevance_to_matchup(ordered_depth_charts = ordered_depth_charts)
 
   # Slice Sample Data:
   sample_data <- slice_play_samples(raw_data = pbp_data) %>%
@@ -59,11 +59,11 @@ data_assemble <- function(.seasons = 2021:2023, cur_week = 20) {
               relationship = 'many-to-one')
 
   # Append Samples:
-  matchup_data <-
-    append_samples_to_matchup(matchup_data = matchup_data, samples = sample_data)
+  matchup_data <- matchup_data %>%
+    append_samples_to_matchup(sample_data = sample_data)
 
   # Return:
-  return(matchup_ata)
+  return(matchup_data)
 
 }
 
@@ -72,27 +72,13 @@ if (F) {
 
   dt <- data_assemble()
 
-
-
-
   dt
 
+# TODO: why was this needed
   # mutate(time_distance = map(
   #   gameday,
   #   \(x) calculate_time_distance(cur_gameday = x, game_team_data)
   # )) %>%
-
-
-# TODO: do you need this
-# elo_data <- nflModeler::get_elo(.season = SEASONS) %>%
-#   select(id_game, id_posteam, qb_value, qb_adj, qb) %>%
-#   left_join(
-#     nflreadr::load_players() %>%
-#       filter(position == 'QB') %>%
-#       select(qb = display_name, id_passer = gsis_id) %>%
-#       unique()
-#   ) %>%
-#   select(-qb)
 
 
 }

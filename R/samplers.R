@@ -2,24 +2,24 @@ initialize_game <-
   function(matchup) {
     # Home starts automatically
 
-    matchup <- add_vars(matchup, id_posteam = matchup$id_home_team)
-    matchup <- add_vars(matchup, id_defteam = matchup$id_away_team)
+    matchup <- collapse::add_vars(matchup, id_posteam = matchup$id_home_team)
+    matchup <- collapse::add_vars(matchup, id_defteam = matchup$id_away_team)
     matchup$id_passer <- matchup$id_home_qb    # sometimes doesn't exist
-    matchup <- add_vars(matchup, yardline_100 = 75)
-    matchup <- add_vars(matchup, game_seconds_remaining = 3600)
-    matchup <- add_vars(matchup, qtr = 1)
-    matchup <- add_vars(matchup, half_seconds_remaining = 1800)
-    matchup <- add_vars(matchup, down = 1)
-    matchup <- add_vars(matchup, ydstogo = 10)
-    matchup <- add_vars(matchup, posteam_score = 0)
-    matchup <- add_vars(matchup, defteam_score = 0)
-    matchup <- add_vars(matchup, score_differential = 0)
-    matchup <- add_vars(matchup, posteam_timeouts_remaining = 3)
-    matchup <- add_vars(matchup, defteam_timeouts_remaining =  3)
-    matchup <- add_vars(matchup, receive_2h_ko = 0)
+    matchup <- collapse::add_vars(matchup, yardline_100 = 75)
+    matchup <- collapse::add_vars(matchup, game_seconds_remaining = 3600)
+    matchup <- collapse::add_vars(matchup, qtr = 1)
+    matchup <- collapse::add_vars(matchup, half_seconds_remaining = 1800)
+    matchup <- collapse::add_vars(matchup, down = 1)
+    matchup <- collapse::add_vars(matchup, ydstogo = 10)
+    matchup <- collapse::add_vars(matchup, posteam_score = 0)
+    matchup <- collapse::add_vars(matchup, defteam_score = 0)
+    matchup <- collapse::add_vars(matchup, score_differential = 0)
+    matchup <- collapse::add_vars(matchup, posteam_timeouts_remaining = 3)
+    matchup <- collapse::add_vars(matchup, defteam_timeouts_remaining =  3)
+    matchup <- collapse::add_vars(matchup, receive_2h_ko = 0)
     # these are meant to be overwritten
-    matchup <- add_vars(matchup, wp = .5)
-    matchup <- add_vars(matchup, vegas_wp = .5)
+    matchup <- collapse::add_vars(matchup, wp = .5)
+    matchup <- collapse::add_vars(matchup, vegas_wp = .5)
 
     return(matchup)
 
@@ -51,6 +51,9 @@ slice_no_dropback <-
 
 pre_allocate_pass_samples <- function(sample_pbp_data, id_passer) {
   assert_cols(sample_pbp_data, id_passer)
+  if ('id_play' %in% colnames(sample_pbp_data)) {
+    cli_alert_warning("{.var sample_pbp_data} should not have the {.var id_play} variable. ")
+  }
 
   data <- collapse::na_omit(sample_pbp_data, cols = .c(id_passer))
 

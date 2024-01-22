@@ -47,26 +47,24 @@ fastr_fix_colnames <- function(data, ...) {
 }
 
 fastr_fix_team_names <- function(data, ...) {
-  name_map <- c('OAK' = 'LV',
-                'SD' = 'LAC',
-                'STL' = 'LA')
-  dots <- rlang::enexprs(...)
-  if (length(dots) != 0) {
-    cols <- dots
-  } else {
-    cols <-
-      exprs(any_of(
+
+    data %>%
+      mutate(across(c(...), ~ stringr::str_replace_all(
+        .x,
         c(
-          "id_posteam",
-          "id_defteam",
-          "id_home_team",
-          "id_away_team"
+          "JAC" = "JAX",
+          "STL" = "LA",
+          "SL" = "LA",
+          "LAR" = "LA",
+          "ARZ" = "ARI",
+          "BLT" = "BAL",
+          "CLV" = "CLE",
+          "HST" = "HOU",
+          "SD" = "LAC",
+          "OAK" = "LV",
+          "WSH" = "WAS"
         )
-      ))
-  }
-  data <-
-    mutate(data, across(!!!cols, \(x) stringr::str_replace_all(string = x, name_map)))
-  return(data)
+      )))
 }
 
 fastr_pivot_home_away <- function(.data,
@@ -76,24 +74,24 @@ fastr_pivot_home_away <- function(.data,
   # Collect Home Cols
   home_data <- .data %>%
     # Set team type
-    mutate(pattern_match = home_cols) %>%
+    dplyr::mutate(pattern_match = home_cols) %>%
     # Select non-away cols
-    select(!dplyr::matches(away_cols)) %>%
+    dplyr::select(!dplyr::matches(away_cols)) %>%
     # Scrub column names
-    rename_with(~ stringr::str_remove_all(.x, home_cols))
+    dplyr::rename_with(~ stringr::str_remove_all(.x, home_cols))
 
   # Collect Away Cols
   away_data <- .data %>%
     # Set team type
-    mutate(pattern_match = away_cols) %>%
+    dplyr::mutate(pattern_match = away_cols) %>%
     # Select away variables
-    select(!dplyr::matches(home_cols)) %>%
+    dplyr::select(!dplyr::matches(home_cols)) %>%
     # Scrub column names
-    rename_with(~ stringr::str_remove_all(.x, away_cols))
+    dplyr::rename_with(~ stringr::str_remove_all(.x, away_cols))
 
   # Bind Home and Away Data
   combined_data <- vec_rbind(home_data, away_data) %>%
-    relocate(pattern_match)
+    dplyr::relocate(pattern_match)
 
 
   return(combined_data)

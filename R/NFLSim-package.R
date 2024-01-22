@@ -1,6 +1,7 @@
 ## usethis namespace: start
 #' @importFrom cli cli_abort
 #' @importFrom cli cli_alert
+#' @importFrom collapse .c
 #' @importFrom collapse fsubset
 #' @importFrom dplyr arrange
 #' @importFrom dplyr case_when
@@ -36,6 +37,7 @@
 #' @importFrom vctrs vec_c
 #' @importFrom vctrs vec_detect_missing
 #' @importFrom vctrs vec_rbind
+#' @importFrom vctrs vec_slice
 #' @useDynLib NFLSim, .registration = TRUE
 ## usethis namespace: end
 NULL

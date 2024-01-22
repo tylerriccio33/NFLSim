@@ -138,17 +138,101 @@ slice_play_samples <- function(raw_data) {
   return(sample_data)
 }
 
-append_samples_to_matchup <- function(matchup_data, samples) {
 
-  browser()
+append_samples_to_matchup <- function(matchup_data, sample_data) {
 
-  # home_team_all_samples <- matchup$home_team_all_samples[[1]]
-  # home_team_pass_samples <- matchup$home_team_pass_samples[[1]]
-  # home_team_def_pass_samples <- matchup$home_team_def_pass_samples[[1]]
-  # home_team_rush_samples <- matchup$home_team_rush_samples[[1]]
-  # home_team_def_rush_samples <- matchup$home_team_def_rush_samples[[1]]
-  # home_team_specials <- matchup$home_team_specials[[1]]
+  clean_samples <- select(sample_data, -any_of('id_play'))
 
-  browser()
+  # Collect QBs:
+  matchup_data$home_qb_list <-
+    map(matchup_data$id_home_team_dc, \(x) collect_qb(x))
+  matchup_data$away_qb_list <-
+    map(matchup_data$id_away_team_dc, \(x) collect_qb(x))
+  matchup_data$home_qb_gsis <-
+    map_chr(matchup_data$home_qb_list, \(x) ifelse(is.null(x$gsis), na_chr, x$gsis))
+  matchup_data$away_qb_gsis <-
+    map_chr(matchup_data$away_qb_list, \(x) ifelse(is.null(x$gsis), na_chr, x$gsis))
+
+  # Slice All Samples:
+  matchup_data$home_team_all_samples <- map(matchup_data$id_home_team, \(x) slice_posteam_samples(clean_samples, x))
+  matchup_data$away_team_all_samples = map(matchup_data$id_away_team, \(x) slice_posteam_samples(clean_samples, x))
+
+  # Slice Def Samples:
+  matchup_data$home_team_all_def_samples <- map(matchup_data$id_home_team, \(x) slice_defteam_samples(clean_samples, x))
+  matchup_data$away_team_all_def_samples = map(matchup_data$id_away_team, \(x) slice_defteam_samples(clean_samples, x))
+
+  # Pass Samples:
+  matchup_data$home_team_pass_samples <-
+    map2(matchup_data$home_qb_gsis,
+         matchup_data$home_roster_relevances,
+         ~ {
+           pre_allocate_pass_samples(clean_samples, .x) %>%
+             append_roster_relevance(.y)
+         })
+    matchup_data$away_team_pass_samples <- map2(matchup_data$away_qb_gsis, matchup_data$away_roster_relevances, ~ {
+      pre_allocate_pass_samples(clean_samples, .x) %>%
+        append_roster_relevance(.y)
+    })
+
+    # Def Pass Samples:
+    matchup_data$home_team_def_pass_samples <- map(matchup_data$id_home_team, \(x) pre_allocate_team_pass_samples(clean_samples, x))
+    matchup_data$away_team_def_pass_samples <- map(matchup_data$id_away_team, \(x) pre_allocate_team_pass_samples(clean_samples, x))
+
+    # Rush Samples:
+    matchup_data$home_team_rush_samples <- map2(matchup_data$home_team_all_samples,
+                                               matchup_data$home_roster_relevances,
+                                               ~ {
+                                                 slice_no_dropback(.x) %>%
+                                                   append_roster_relevance(.y)
+                                               })
+    matchup_data$away_team_rush_samples <- map2(matchup_data$away_team_all_samples,
+                                               matchup_data$away_roster_relevances,
+                                               ~ {
+                                                 slice_no_dropback(.x) %>%
+                                                   append_roster_relevance(.y)
+                                               })
+
+    # Def Rush Samples:
+    matchup_data$home_team_def_rush_samples = map(matchup_data$home_team_all_def_samples, \(x) slice_no_dropback(x))
+    matchup_data$away_team_def_rush_samples = map(matchup_data$away_team_all_def_samples, \(x) slice_no_dropback(x))
+
+    # Specials:
+    matchup_data$home_team_specials = map(matchup_data$home_team_all_samples, \(x) slice_specials(x))
+    matchup_data$away_team_specials = map(matchup_data$away_team_all_samples, \(x) slice_specials(x))
+
+    # Allocate ELO Data for Safety Samples:
+    elo_data <- get_elo(.season = unique(sample_data$id_season)) %>%
+      dplyr::select(id_game, id_posteam, qb_value, qb_adj, qb) %>%
+      dplyr::left_join(
+        nflreadr::load_players() %>%
+          dplyr::filter(position == 'QB') %>%
+          dplyr::select(qb = display_name, id_passer = gsis_id) %>%
+          unique()
+      ) %>%
+      dplyr::select(-qb)
+
+
+    # Collect and Supplement Safety QB Samples:
+    matchup_data$home_safety_qb_samples = map(
+      matchup_data$id_home_qb,
+      \(x) collect_safety_qb_samples(
+        sample_data = clean_samples,
+        elo_data = elo_data,
+        qb_id = x
+      )
+    )
+    matchup_data$away_safety_qb_samples = map(
+      matchup_data$id_away_qb,
+      \(x) collect_safety_qb_samples(
+        sample_data = clean_samples,
+        elo_data = elo_data,
+        qb_id = x
+      )
+    )
+    matchup_data$home_team_pass_samples = map2(matchup_data$home_team_pass_samples, matchup_data$home_safety_qb_samples, \(x, y) vec_rbind(x, y))
+    matchup_data$home_team_pass_samples = map2(matchup_data$away_team_pass_samples, matchup_data$away_safety_qb_samples, \(x, y) vec_rbind(x, y))
+
+    # Return:
+    return(matchup_data)
 
 }

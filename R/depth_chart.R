@@ -146,7 +146,7 @@ reassign_teams <- function(games, team_col, dc_col) {
 
 }
 
-collect_dc <- function(matchup, dc_col, clean = T) {
+collect_dc <- function(dc_col, clean = T) {
   # collect and clean dc from a matchup
 
   dc <- pull(matchup, {{dc_col}}) %>% .[[1]]
@@ -209,11 +209,15 @@ append_player_id <- function(game_plays, dc, pos) {
 }
 
 collect_qb <- function(dc) {
-  qb_dc <- vctrs::vec_slice(dc, dc$position == 'QB')
+  assert(
+    "`dc` in `collect_qb` must be single tibble." = tibble::is_tibble(dc)
+  )
+  assert_cols(dc, pos_abb, id_gsis, player_full_name)
+  qb_dc <- vctrs::vec_slice(dc, dc$pos_abb == 'QB')
 
   gsis <- qb_dc$id_gsis
 
-  name <- qb_dc$name
+  name <- qb_dc$player_full_name
 
   return(list(gsis = gsis, name = name))
 

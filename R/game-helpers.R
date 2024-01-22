@@ -8,12 +8,10 @@ expose_matchup_variables <- function(matchup) {
     home_team <- matchup$id_home_team
     away_team <- matchup$id_away_team
     # DCs:
-    home_dc <- matchup$id_home_dc[[1]]
-    away_dc <- matchup$id_home_dc[[1]]
+    home_dc <- matchup$id_home_team_dc[[1]]
+    away_dc <- matchup$id_away_team_dc[[1]]
     # Player
-    # home_qb_list <- matchup$home_qb_list[[1]]
     home_qb_gsis <- matchup$id_home_qb[[1]]
-    # away_qb_list <- matchup$away_qb_list[[1]]
     away_qb_gsis <- matchup$id_away_qb[[1]]
     # Home Sample Allocation:
     home_team_all_samples <- matchup$home_team_all_samples[[1]]
@@ -36,7 +34,9 @@ expose_matchup_variables <- function(matchup) {
 
 
   # List Variables:
-  variable_list <- lapply(ls(), function(var) get(var))
+  var_names <- ls()
+  variable_list <- lapply(var_names, function(var) get(var))
+  names(variable_list) <- var_names
 
   # Read to Parent:
   parent_env <- rlang::env_parent()

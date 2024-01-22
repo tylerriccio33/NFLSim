@@ -50,7 +50,7 @@ get_data <- function(seasons) {
     # Convert to tibble
     tibble::as_tibble() %>%
     # Fix team names
-    dplyr::mutate(across(
+    dplyr::mutate(dplyr::across(
       c(posteam, defteam, home_team, away_team),
       ~ dplyr::case_when(.x == 'OAK' ~ 'LV',
                   .x == 'SD' ~ 'LAC',
@@ -176,5 +176,60 @@ get_players <- function(...) {
     ) %>%
     dplyr::mutate(display_name = nflreadr::clean_player_names(display_name)) %>%
     fastr_fix_colnames()
+}
+
+get_elo <- function(.seasons = seasons) {
+
+  raw <- readr::read_csv('https://raw.githubusercontent.com/greerreNFL/nfeloqb/main/qb_elos.csv')
+
+  data <- raw %>%
+    # Filtering Season
+    dplyr::filter(season %in% .seasons) %>%
+    # Fixing team name
+    fastr_fix_team_names(team1, team2) %>%
+    # Pivot
+    fastr_pivot_home_away("home_cols" = '1',
+                    "away_cols" = '2') %>%
+    dplyr::select(-pattern_match) %>%
+    # Fixing Date
+    dplyr::mutate(date = as.character(date)) %>%
+    dplyr::rename(id_posteam = team) %>%
+    fastr_fix_colnames()
+
+  # Mini-Schedule data to turn the date into the game id
+  date_lookup <- nflreadr::load_schedules() %>%
+    fastr_fix_team_names(game_id, home_team, away_team) %>%
+    dplyr::select(id_game = game_id,
+           id_week= week ,
+           home_team,
+           away_team,
+           date = gameday) %>%
+    fastr_pivot_home_away() %>%
+    dplyr::select(-pattern_match) %>%
+    dplyr::rename(id_posteam = team) %>%
+    tibble::as_tibble()
+
+  # Convert date + team to game_id
+  data <- data %>%
+    dplyr::left_join(date_lookup) %>%
+    dplyr::relocate(dplyr::starts_with('id_')) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename_with( ~ glue("team_{.x}"), -c(dplyr::starts_with('id_'), dplyr::contains('qb')))
+
+  # Calculating ELOA
+  data <- data %>%
+    dplyr::group_by(id_posteam) %>%
+    dplyr::arrange(id_season, id_week, .by_group = T) %>%
+    dplyr::mutate(team_eloa = dplyr::lead(team_elo_pre) - team_elo_pre) %>%
+    dplyr::ungroup()
+
+  # Some cols contain 'post' data
+  # This is data after the game so it must be removed
+  data <- data %>%
+    dplyr::select(-dplyr::ends_with('_post')) %>%
+    dplyr::rename_with(~ stringr::str_remove_all(.x, '_pre'), -dplyr::starts_with('id_'))
+
+  return(data)
+
 }
 

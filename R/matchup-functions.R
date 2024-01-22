@@ -57,7 +57,7 @@ append_future_dc <- function(matchup_data, future_games) {
 
 }
 
-append_roster_relevance <- function(matchup_data, ordered_depth_charts) {
+append_roster_relevance_to_matchup <- function(matchup_data, ordered_depth_charts) {
   matchup_data %>%
   mutate(
     home_roster_relevances = map(

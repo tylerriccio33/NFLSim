@@ -7,3 +7,4 @@ results <- bench::mark(
   cpp = between_cpp_parallel(x = test_vector, left = .25, right = .25),
   check = T
 )
+results

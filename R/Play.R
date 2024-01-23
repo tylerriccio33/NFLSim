@@ -1,12 +1,12 @@
 
 Play <- function(merged_sample) {
-  assert("Data passed to Play should be 1 row" = fnrow(merged_sample) == 1)
-  
+  assert("Data passed to Play should be 1 row" = collapse::fnrow(merged_sample) == 1)
+
   play <- merged_sample
-  
+
   # catch large events w/first order
   # catch mini events w/second order
-  
+
   # First Order Events:
   # touchdown (any)
   # fumble lost
@@ -52,15 +52,15 @@ Play <- function(merged_sample) {
     post <- simulate_touchback(play)
     return(post)
   } else if (play$punt_out_of_bounds == 1 | play$punt_fair_catch == 1) {
-    post <- flip_team(play, 
-                      yards_added = play$kick_distance, 
+    post <- flip_team(play,
+                      yards_added = play$kick_distance,
                       touchback_on_invalid_yards = T)
     return(post)
   } else if (play$punt_blocked == 1) {
     post <- flip_team(play, yards_added = play$return_yards)
     return(post)
   }
-  
+
   # Second Order Events:
   # fourth down failed
   # punt returned
@@ -80,15 +80,15 @@ Play <- function(merged_sample) {
     post <- flip_team(play, yards_added = play$return_yards)
     return(post)
   }
-  
+
   # Normal Events:
   post <- adjust_down_distance(play)
-  
+
   # validate
   validate_play(post)
-  
+
   return(post)
-  
+
 }
 
 

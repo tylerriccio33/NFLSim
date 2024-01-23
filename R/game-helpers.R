@@ -1,7 +1,7 @@
 
 
 
-expose_matchup_variables <- function(matchup) {
+assign_matchup_variables <- function(matchup) {
 
   try_fetch({
     # Teams:
@@ -33,15 +33,79 @@ expose_matchup_variables <- function(matchup) {
   })
 
 
-  # List Variables:
-  var_names <- ls()
-  variable_list <- lapply(var_names, function(var) get(var))
-  names(variable_list) <- var_names
+  # Assign to Parent:
+  invisible(list2env(as.list(environment()), parent.frame()) )
 
-  # Read to Parent:
-  parent_env <- rlang::env_parent()
-  list2env(variable_list, envir = parent_env)
 
 }
 
+set_cur_team <- function() {
 
+  # Get Parent:
+  env <- parent.frame()
+
+  # Get Team:
+  next_play <- get("next_play", envir = env)
+  cur_team <- next_play$id_posteam
+
+  # Get QB:
+  home_team <- get("home_team", envir = env)
+  home_qb_gsis <- get("home_qb_gsis", envir = env)
+  away_qb_gsis <- get("away_qb_gsis", envir = env)
+  cur_qb <-
+    ifelse(cur_team == home_team, home_qb_gsis, away_qb_gsis)
+
+  # All Samples:
+  home_team_all_samples <- get("home_team_all_samples", envir = env)
+  away_team_all_samples <- get("away_team_all_samples", envir = env)
+  cur_all_samples <- ifelse(cur_team == home_team,
+                            list(home_team_all_samples),
+                            list(away_team_all_samples))[[1]]
+
+  # Pass Samples:
+  home_team_pass_samples <- get("home_team_pass_samples", envir = env)
+  away_team_pass_samples <- get("away_team_pass_samples", envir = env)
+  cur_pass_samples <- ifelse(
+    cur_team == home_team,
+    list(home_team_pass_samples),
+    list(away_team_pass_samples)
+  )[[1]]
+
+  # Rush Samples:
+  home_team_rush_samples <- get("home_team_rush_samples", envir = env)
+  away_team_rush_samples <- get("away_team_rush_samples", envir = env)
+  cur_rush_samples <- ifelse(
+    cur_team == home_team,
+    list(home_team_rush_samples),
+    list(away_team_rush_samples)
+  )[[1]]
+
+  # Special Samples:
+  home_team_specials <- get("home_team_specials", envir = env)
+  away_team_specials <- get("away_team_specials", envir = env)
+  cur_special_samples <- ifelse(cur_team == home_team,
+                                list(home_team_specials),
+                                list(away_team_specials))[[1]]
+
+  # Def Pass Samples:
+  away_team_def_pass_samples <- get("away_team_def_pass_samples", envir = env)
+  home_team_def_pass_samples <- get("home_team_def_pass_samples", envir = env)
+  cur_def_pass_samples <- ifelse(
+    cur_team == home_team,
+    list(away_team_def_pass_samples),
+    list(home_team_def_pass_samples)
+  )[[1]]
+
+  # Def Rush Samples:
+  away_team_def_rush_samples <- get("away_team_def_rush_samples", envir = env)
+  home_team_def_rush_samples <- get("home_team_def_rush_samples", envir = env)
+  cur_def_rush_samples <- ifelse(
+    cur_team == home_team,
+    list(away_team_def_rush_samples),
+    list(home_team_def_rush_samples)
+  )[[1]]
+
+  # Assign to Parent:
+  invisible(list2env(as.list(environment()), parent.frame()))
+
+}

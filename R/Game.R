@@ -5,72 +5,28 @@ Game <-
            quiet = F) {
     assert("Matchup dataclass must be a single row." = nrow(matchup_dataclass) == 1)
 
-    browser()
     # Initialize Game:
-    expose_matchup_variables(matchup = matchup_dataclass)
+    assign_matchup_variables(matchup = matchup_dataclass)
     next_play <- initialize_game(matchup = matchup_dataclass)
     next_play <- add_wp(next_play)
     game_plays <- tibble::new_tibble(x = list(), nrow = 0)
     n_play <- 1
+    set_cur_team()
+    cli::cli_h2("Starting Game")
+    cli::cli_progress_bar("Playing game", total = max_plays)
 
-    if (!quiet) {
-      cli::cli_h2("Starting Game")
-      cli::cli_progress_bar("Playing game", total = max_plays)
-    }
-
-    # TODO: abstract to function, make modifictions of parent frame
-    cur_team <- home_team
-    cur_qb <- home_qb_gsis
-    cur_all_samples <- home_team_all_samples
-    cur_pass_samples <- home_team_pass_samples
-    cur_rush_samples <- home_team_rush_samples
-    cur_special_samples <- home_team_specials
-    cur_def_pass_samples <- away_team_def_pass_samples
-    cur_def_rush_samples <- away_team_def_rush_samples
-
-    # benchmark ~ 4.37ms
+    # Start Game:
     while (n_play <= max_plays) {
-      if (!quiet) {
-        cli_progress_update()
-      }
-      # Set Current Team #
-      # TODO: abstract to function, make mods to parent frame
+      cli_progress_update()
       if (next_play$id_posteam != cur_team) {
-        cur_team <- next_play$id_posteam
-        cur_qb <- ifelse(cur_team == home_team, home_qb_gsis, away_qb_gsis)
-        cur_all_samples <- ifelse(cur_team == home_team,
-                                  list(home_team_all_samples),
-                                  list(away_team_all_samples)
-        )[[1]]
-        cur_pass_samples <- ifelse(cur_team == home_team,
-                                   list(home_team_pass_samples),
-                                   list(away_team_pass_samples)
-        )[[1]]
-        cur_rush_samples <- ifelse(cur_team == home_team,
-                                   list(home_team_rush_samples),
-                                   list(away_team_rush_samples)
-        )[[1]]
-        cur_special_samples <- ifelse(cur_team == home_team,
-                                      list(home_team_specials),
-                                      list(away_team_specials)
-        )[[1]]
-        # go to away def samples
-        cur_def_pass_samples <- ifelse(cur_team == home_team,
-                                       list(away_team_def_pass_samples),
-                                       list(home_team_def_pass_samples)
-        )[[1]]
-        cur_def_rush_samples <- ifelse(cur_team == home_team,
-                                       list(away_team_def_rush_samples),
-                                       list(home_team_def_rush_samples)
-        )[[1]]
+        set_cur_team()
       }
 
-      # Make Fourth Down Decision #
+      # Fourth Down Decision:
       if (next_play$down == 4) {
         fourth_down_situational_samples <-
-          Situation(
-            samples = cur_all_samples,
-            next_play)
+          Situation(samples = cur_all_samples,
+                    next_play)
         play_decision <-
           simulate_fourth_down_decision(fourth_down_situational_samples)
       } else {
@@ -129,11 +85,12 @@ Game <-
 
     }
 
-    if (!quiet) {
-      cli_progress_done()
-      cli_alert_success("End game.")
-    }
+    # End Game:
+    cli_progress_done()
+    cli_alert_success("End game.")
+    return(game_plays)
 
+    #
     # TODO: abstract to function
     clean_game <- game_plays
     get_vars(clean_game,
@@ -148,6 +105,8 @@ Game <-
       # append receiver
       append_player_id(dc = home_dc, pos = "receiver") %>%
       append_player_id(dc = away_dc, pos = "receiver")
+
+    return(clean_game)
 
     # TODO: abstract to function
     clean_game <- clean_game %>%
@@ -188,29 +147,6 @@ Game <-
     return(clean_game)
 
   }
-
-
-#
-# bench::mark(Game(dt, max_plays = 1, quiet = T),
-#             iterations = 10)
-
-
-# t <- Game(dt, max_plays = 150, quiet = F)
-
-
-
-# dt <- group_by(filtered_matchups, matchup) %>%
-#   nest(.key = "matchup_profile") %>%
-#   ungroup() %>%
-#   pull(matchup_profile) %>%
-#   .[[1]]
-#
-#
-#
-# dt %>%
-#   Game(max_plays = 150, quiet = F) %>%
-#   select(id_posteam, yardline_100, down, ydstogo, yards_gained, desc) %>%
-#   view()
 
 
 

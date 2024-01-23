@@ -14,17 +14,17 @@ SelectSample <- function(off_samples, def_samples) {
   assert_cols(def_samples, weighted_time_distance, wpa)
 
   # if there's 1 sample return it
-  if (fnrow(off_samples) == 1) {
+  if (collapse::fnrow(off_samples) == 1) {
     return(off_samples)
-  } else if (fnrow(off_samples) <= 5) {
+  } else if (collapse::fnrow(off_samples) <= 5) {
     # if there's too few samples to compute means/scales
     # return the last (usually most recent)
-    selected <- ss(off_samples, i = fnrow(off_samples))
+    selected <- collapse::ss(off_samples, i = collapse::fnrow(off_samples))
     return(selected)
   }
 
   # gather weighted mean of def wpa
-  mean_def_yards_gained <- fmean(x = def_samples$yards_gained,
+  mean_def_yards_gained <- collapse::fmean(x = def_samples$yards_gained,
                                  w = def_samples$weighted_time_distance)
 
   # find closest offensive wpa
@@ -39,7 +39,7 @@ SelectSample <- function(off_samples, def_samples) {
   i <- sample(seq_along(composite_probs), size = 1, prob = composite_probs)
 
   # subset index of sample
-  selected <- ss(off_samples, i = i)
+  selected <- collapse::ss(off_samples, i = i)
 
   return(selected)
 

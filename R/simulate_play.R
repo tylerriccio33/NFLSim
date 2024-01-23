@@ -10,13 +10,13 @@ simulate_touchback <- function(play) {
 
 simulate_fourth_down_decision <- function(sample_fourth_downs) {
   # summarize average decision
-  assert("No samples  passed to 4d simulator" = fnrow(sample_fourth_downs) != 0)
+  assert("No samples  passed to 4d simulator" = collapse::fnrow(sample_fourth_downs) != 0)
   assert("All samples should be fourth down" = all(sample_fourth_downs$down == 4))
 
 
-  pa <- fsum(sample_fourth_downs$punt_attempt)
-  fg <- fsum(sample_fourth_downs$field_goal_attempt)
-  go <- fsum(
+  pa <- collapse::fsum(sample_fourth_downs$punt_attempt)
+  fg <- collapse::fsum(sample_fourth_downs$field_goal_attempt)
+  go <- collapse::fsum(
     sample_fourth_downs$fourth_down_converted == 1 |
       sample_fourth_downs$fourth_down_converted == 1
   )
@@ -25,7 +25,7 @@ simulate_fourth_down_decision <- function(sample_fourth_downs) {
   sums <- c(pa, fg, go)
   names(sums) <- order_names
 
-  i <- whichv(sums, value = max(sums))[1]
+  i <- collapse::whichv(sums, value = max(sums))[1]
 
   decision <- order_names[i]
 

@@ -47,7 +47,7 @@ fcalculate_win_probability <- function(pbp_data) {
   model_data <-
     collapse::add_vars(model_data, Diff_Time_Ratio =  model_data$score_differential / (exp(-4 * model_data$elapsed_share)))
 
-  wp <- GET_PREDS_WP_PARTIAL(model_data)
+  wp <- GET_PREDS_WP_PARTIAL(model_data = model_data)
 
   return(wp)
 
@@ -58,21 +58,8 @@ fwp_spread_model_select <- function(pbp) {
   #get the columns needed for wp predictions
   #making sure they're in the right order
 
-  # pbp <- pbp %>%
-  #   fselect(
-  #     "receive_2h_ko",
-  #     "spread_time",
-  #     "home",
-  #     "half_seconds_remaining",
-  #     "game_seconds_remaining",
-  #     "Diff_Time_Ratio",
-  #     "score_differential",
-  #     "down",
-  #     "ydstogo",
-  #     "yardline_100",
-  #     "posteam_timeouts_remaining",
-  #     "defteam_timeouts_remaining"
-  #   )
+  # ! This must be in the right order ! #
+
   pbp <- pbp %>%
     collapse::fselect(
       receive_2h_ko,

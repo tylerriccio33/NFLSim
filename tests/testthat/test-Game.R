@@ -1,5 +1,5 @@
 
-test_dataclass <- data_assemble(.seasons = 2022:2023, cur_week = 21)
+test_dataclass <- data_assemble(.seasons = 2022:2023, cur_week = 22)
 
 test_that("Game runs no error", {
 
